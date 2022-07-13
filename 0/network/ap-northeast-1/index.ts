@@ -12,7 +12,9 @@ const deploy_spec = [
                 Stack: pulumi.getStack(),
             }
         },
-        defaultvpcdhcpoptions: {
+        vpcdhcpoptions: {
+            domainName: "ap-northeast-1.compute.internal",
+            domainNameServers: ["AmazonProvidedDNS"],
             tags: {
                 Name: "dopt-ap-northeast-1-01",
                 Project: pulumi.getProject(),
@@ -127,6 +129,134 @@ const deploy_spec = [
                 }
             }
         ]
+    },
+    {
+        vpc: {
+            cidrBlock: "172.33.0.0/16",
+            enableDnsHostnames: true,
+            tags: {
+                Name: "vpc-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        vpcdhcpoptions: {
+            domainName: "ap-northeast-1.compute.internal",
+            domainNameServers: ["AmazonProvidedDNS"],
+            tags: {
+                Name: "dopt-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        internetgateway: {
+            tags: {
+                Name: "igw-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        defaultsecuritygroup: {
+            ingress: [
+                {
+                    protocol: "-1",
+                    self: true,
+                    fromPort: 0,
+                    toPort: 0,
+                }
+            ],
+            egress: [
+                {
+                    fromPort: 0,
+                    toPort: 0,
+                    protocol: "-1",
+                    cidrBlocks: ["0.0.0.0/0"],
+                }
+            ],
+            tags: {
+                Name: "sg-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        subnet: [
+            {
+                cidrBlock: "172.33.0.0/24",
+                tags: {
+                    Name: "subnet-ap-northeast-1-04",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                },
+                egress: [
+                    {
+                        protocol: "tcp",
+                        ruleNo: 100,
+                        action: "allow",
+                        cidrBlock: "0.0.0.0/0",
+                        fromPort: 80,
+                        toPort: 80,
+                    },
+                    {
+                        protocol: "tcp",
+                        ruleNo: 105,
+                        action: "allow",
+                        cidrBlock: "0.0.0.0/0",
+                        fromPort: 443,
+                        toPort: 443,
+                    },
+                    {
+                        protocol: "udp",
+                        ruleNo: 110,
+                        action: "allow",
+                        cidrBlock: "0.0.0.0/0",
+                        fromPort: 123,
+                        toPort: 123,
+                    }
+                ],
+                ingress: [
+                    {
+                        protocol: "tcp",
+                        ruleNo: 100,
+                        action: "allow",
+                        cidrBlock: "0.0.0.0/0",
+                        fromPort: 80,
+                        toPort: 80,
+                    },
+                    {
+                        protocol: "tcp",
+                        ruleNo: 105,
+                        action: "allow",
+                        cidrBlock: "0.0.0.0/0",
+                        fromPort: 443,
+                        toPort: 443,
+                    },
+                    {
+                        protocol: "tcp",
+                        ruleNo: 110,
+                        action: "allow",
+                        cidrBlock: "0.0.0.0/0",
+                        fromPort: 22,
+                        toPort: 22,
+                    }
+                ]
+            },
+            {
+                cidrBlock: "172.33.1.0/24",
+                tags: {
+                    Name: "subnet-ap-northeast-1-05",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            },
+            {
+                cidrBlock: "172.33.2.0/24",
+                tags: {
+                    Name: "subnet-ap-northeast-1-06",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            }
+        ]
     }
 ]
 
@@ -137,9 +267,15 @@ for (var i in deploy_spec) {
         enableDnsHostnames: deploy_spec[i].vpc.enableDnsHostnames,
         tags: deploy_spec[i].vpc.tags
     });
-    // Modify Amazon Virtual Private Cloud Default DHCP Options.
-    const defaultvpcdhcpoptions = new aws.ec2.DefaultVpcDhcpOptions("DefaultVpcDhcpOptions", {
-        tags: deploy_spec[i].defaultvpcdhcpoptions.tags
+    // Create Amazon Virtual Private Cloud Default DHCP Options.
+    const vpcdhcpoptions = new aws.ec2.VpcDhcpOptions(deploy_spec[i].vpcdhcpoptions.tags.Name, {
+        domainName: deploy_spec[i].vpcdhcpoptions.domainName,
+        domainNameServers: deploy_spec[i].vpcdhcpoptions.domainNameServers,
+        tags: deploy_spec[i].vpcdhcpoptions.tags
+    });
+    const vpcdhcpoptionsassociation = new aws.ec2.VpcDhcpOptionsAssociation(deploy_spec[i].vpcdhcpoptions.tags.Name, {
+        vpcId: vpc.id,
+        dhcpOptionsId: vpcdhcpoptions.id,
     });
     // Create Amazon Virtual Private Cloud Internet Gateway.
     const internetgateway = new aws.ec2.InternetGateway(deploy_spec[i].internetgateway.tags.Name, {
