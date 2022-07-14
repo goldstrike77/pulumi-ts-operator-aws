@@ -1,4 +1,4 @@
-[![Deploy](https://get.pulumi.com/new/button.svg)]
+![](https://get.pulumi.com/new/button.svg)
 
 ## Running the App
 
