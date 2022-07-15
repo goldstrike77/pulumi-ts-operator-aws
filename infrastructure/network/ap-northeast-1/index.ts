@@ -30,20 +30,15 @@ const deploy_spec = [
         },
         defaultsecuritygroup: {
             ingress: [
-                {
-                    protocol: "-1",
-                    self: true,
-                    fromPort: 0,
-                    toPort: 0,
-                }
+                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 }
             ],
             egress: [
-                {
-                    fromPort: 0,
-                    toPort: 0,
-                    protocol: "-1",
-                    cidrBlocks: ["0.0.0.0/0"],
-                }
+                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "udp", fromPort: 123, toPort: 123 }
             ],
             tags: {
                 Name: "sg-ap-northeast-1-01",
@@ -54,66 +49,18 @@ const deploy_spec = [
         subnet: [
             {
                 cidrBlock: "172.32.0.0/24",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
                     Name: "subnet-ap-northeast-1-01",
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 },
-                egress: [
-                    {
-                        protocol: "tcp",
-                        ruleNo: 100,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 80,
-                        toPort: 80,
-                    },
-                    {
-                        protocol: "tcp",
-                        ruleNo: 105,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 443,
-                        toPort: 443,
-                    },
-                    {
-                        protocol: "udp",
-                        ruleNo: 110,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 123,
-                        toPort: 123,
-                    }
-                ],
-                ingress: [
-                    {
-                        protocol: "tcp",
-                        ruleNo: 100,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 80,
-                        toPort: 80,
-                    },
-                    {
-                        protocol: "tcp",
-                        ruleNo: 105,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 443,
-                        toPort: 443,
-                    },
-                    {
-                        protocol: "tcp",
-                        ruleNo: 110,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 22,
-                        toPort: 22,
-                    }
-                ]
             },
             {
                 cidrBlock: "172.32.1.0/24",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
                     Name: "subnet-ap-northeast-1-02",
                     Project: pulumi.getProject(),
@@ -122,6 +69,8 @@ const deploy_spec = [
             },
             {
                 cidrBlock: "172.32.2.0/24",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
                     Name: "subnet-ap-northeast-1-03",
                     Project: pulumi.getProject(),
@@ -130,134 +79,85 @@ const deploy_spec = [
             }
         ]
     },
-    {
-        vpc: {
-            cidrBlock: "172.33.0.0/16",
-            enableDnsHostnames: true,
-            tags: {
-                Name: "vpc-ap-northeast-1-02",
-                Project: pulumi.getProject(),
-                Stack: pulumi.getStack(),
-            }
-        },
-        vpcdhcpoptions: {
-            domainName: "ap-northeast-1.compute.internal",
-            domainNameServers: ["AmazonProvidedDNS"],
-            tags: {
-                Name: "dopt-ap-northeast-1-02",
-                Project: pulumi.getProject(),
-                Stack: pulumi.getStack(),
-            }
-        },
-        internetgateway: {
-            tags: {
-                Name: "igw-ap-northeast-1-02",
-                Project: pulumi.getProject(),
-                Stack: pulumi.getStack(),
-            }
-        },
-        defaultsecuritygroup: {
+    /**
+      {
+          vpc: {
+              cidrBlock: "172.33.0.0/16",
+              enableDnsHostnames: true,
+              tags: {
+                  Name: "vpc-ap-northeast-1-02",
+                  Project: pulumi.getProject(),
+                  Stack: pulumi.getStack(),
+              }
+          },
+          vpcdhcpoptions: {
+              domainName: "ap-northeast-1.compute.internal",
+              domainNameServers: ["AmazonProvidedDNS"],
+              tags: {
+                  Name: "dopt-ap-northeast-1-02",
+                  Project: pulumi.getProject(),
+                  Stack: pulumi.getStack(),
+              }
+          },
+          internetgateway: {
+              tags: {
+                  Name: "igw-ap-northeast-1-02",
+                  Project: pulumi.getProject(),
+                  Stack: pulumi.getStack(),
+              }
+          },
+          defaultsecuritygroup: {
             ingress: [
-                {
-                    protocol: "-1",
-                    self: true,
-                    fromPort: 0,
-                    toPort: 0,
-                }
+                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 }
             ],
             egress: [
-                {
-                    fromPort: 0,
-                    toPort: 0,
-                    protocol: "-1",
-                    cidrBlocks: ["0.0.0.0/0"],
-                }
+                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "udp", fromPort: 123, toPort: 123 }
             ],
-            tags: {
-                Name: "sg-ap-northeast-1-02",
-                Project: pulumi.getProject(),
-                Stack: pulumi.getStack(),
-            }
-        },
-        subnet: [
-            {
-                cidrBlock: "172.33.0.0/24",
-                tags: {
-                    Name: "subnet-ap-northeast-1-04",
-                    Project: pulumi.getProject(),
-                    Stack: pulumi.getStack(),
-                },
-                egress: [
-                    {
-                        protocol: "tcp",
-                        ruleNo: 100,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 80,
-                        toPort: 80,
-                    },
-                    {
-                        protocol: "tcp",
-                        ruleNo: 105,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 443,
-                        toPort: 443,
-                    },
-                    {
-                        protocol: "udp",
-                        ruleNo: 110,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 123,
-                        toPort: 123,
-                    }
-                ],
-                ingress: [
-                    {
-                        protocol: "tcp",
-                        ruleNo: 100,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 80,
-                        toPort: 80,
-                    },
-                    {
-                        protocol: "tcp",
-                        ruleNo: 105,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 443,
-                        toPort: 443,
-                    },
-                    {
-                        protocol: "tcp",
-                        ruleNo: 110,
-                        action: "allow",
-                        cidrBlock: "0.0.0.0/0",
-                        fromPort: 22,
-                        toPort: 22,
-                    }
-                ]
-            },
-            {
-                cidrBlock: "172.33.1.0/24",
-                tags: {
-                    Name: "subnet-ap-northeast-1-05",
-                    Project: pulumi.getProject(),
-                    Stack: pulumi.getStack(),
-                }
-            },
-            {
-                cidrBlock: "172.33.2.0/24",
-                tags: {
-                    Name: "subnet-ap-northeast-1-06",
-                    Project: pulumi.getProject(),
-                    Stack: pulumi.getStack(),
-                }
-            }
-        ]
-    }
+              tags: {
+                  Name: "sg-ap-northeast-1-02",
+                  Project: pulumi.getProject(),
+                  Stack: pulumi.getStack(),
+              }
+          },
+          subnet: [
+              {
+                  cidrBlock: "172.33.0.0/24",
+                  egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                  ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                  tags: {
+                      Name: "subnet-ap-northeast-1-04",
+                      Project: pulumi.getProject(),
+                      Stack: pulumi.getStack(),
+                  }
+              },
+              {
+                  cidrBlock: "172.33.1.0/24",
+                  egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                  ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                  tags: {
+                      Name: "subnet-ap-northeast-1-05",
+                      Project: pulumi.getProject(),
+                      Stack: pulumi.getStack(),
+                  }
+              },
+              {
+                  cidrBlock: "172.33.2.0/24",
+                  egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                  ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                  tags: {
+                      Name: "subnet-ap-northeast-1-06",
+                      Project: pulumi.getProject(),
+                      Stack: pulumi.getStack(),
+                  }
+              }
+          ]
+      }
+     */
 ]
 
 for (var i in deploy_spec) {
@@ -308,9 +208,5 @@ for (var i in deploy_spec) {
             networkAclId: acl.id,
             subnetId: subnet.id,
         }, { dependsOn: [acl] });
-        const routeTableAssociation = new aws.ec2.RouteTableAssociation(deploy_spec[i].subnet[subnet_index].tags.Name, {
-            subnetId: subnet.id,
-            routeTableId: vpc.defaultRouteTableId
-        });
     };
 }
