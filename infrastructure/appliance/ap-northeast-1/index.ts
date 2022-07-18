@@ -19,6 +19,17 @@ const deploy_spec = [
                 Project: pulumi.getProject(),
                 Stack: pulumi.getStack(),
             }
+        },
+        clientvpn: {
+            domainName: "example.com",
+            validationMethod: "DNS",
+            clientCidrBlock: "10.0.0.0/22",
+            subnet: "subnet-ap-northeast-1-01",
+            tags: {
+                Name: "client-vpn-ap-northeast-1-01",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
         }
     }
 ]
@@ -50,4 +61,31 @@ for (var i in deploy_spec) {
             routeTableId: routetable.id
         }, { dependsOn: [routetable] });
     };
+    // Create Amazon Client VPN.
+    const certificate = new aws.acm.Certificate(deploy_spec[i].clientvpn.tags.Name, {
+        domainName: deploy_spec[i].clientvpn.domainName,
+        validationMethod: deploy_spec[i].clientvpn.validationMethod,
+        tags: deploy_spec[i].clientvpn.tags
+    });
+    const endpoint = new aws.ec2clientvpn.Endpoint(deploy_spec[i].clientvpn.tags.Name, {
+        description: "Example Client VPN endpoint",
+        serverCertificateArn: certificate.arn,
+        clientCidrBlock: deploy_spec[i].clientvpn.clientCidrBlock,
+        authenticationOptions: [{
+            type: "certificate-authentication",
+            rootCertificateChainArn: certificate.arn,
+        }],
+        connectionLogOptions: {
+            enabled: false,
+        },
+    }, { dependsOn: [certificate] });
+    const networkassociation = new aws.ec2clientvpn.NetworkAssociation(deploy_spec[i].clientvpn.tags.Name, {
+        clientVpnEndpointId: endpoint.id,
+        subnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.subnet] }] })).id,
+    }, { dependsOn: [endpoint] });
+    const route = new aws.ec2clientvpn.Route(deploy_spec[i].clientvpn.tags.Name, {
+        clientVpnEndpointId: endpoint.id,
+        destinationCidrBlock: "0.0.0.0/0",
+        targetVpcSubnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.subnet] }] })).id,
+    }, { dependsOn: [networkassociation] });
 }
