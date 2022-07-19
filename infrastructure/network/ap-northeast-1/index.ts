@@ -41,7 +41,7 @@ const deploy_spec = [
                 { cidrBlocks: ["0.0.0.0/0"], protocol: "udp", fromPort: 123, toPort: 123 }
             ],
             tags: {
-                Name: "sg-ap-northeast-1-01",
+                Name: "sg-default-ap-northeast-1-01",
                 Project: pulumi.getProject(),
                 Stack: pulumi.getStack(),
             }
