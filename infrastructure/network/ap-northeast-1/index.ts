@@ -48,7 +48,8 @@ const deploy_spec = [
         },
         subnet: [
             {
-                cidrBlock: "172.32.0.0/24",
+                cidrBlock: "172.32.0.0/28",
+                availabilityZone: "ap-northeast-1a",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
@@ -58,7 +59,8 @@ const deploy_spec = [
                 },
             },
             {
-                cidrBlock: "172.32.1.0/24",
+                cidrBlock: "172.32.0.16/28",
+                availabilityZone: "ap-northeast-1c",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
@@ -68,7 +70,8 @@ const deploy_spec = [
                 }
             },
             {
-                cidrBlock: "172.32.2.0/24",
+                cidrBlock: "172.32.1.0/24",
+                availabilityZone: "ap-northeast-1a",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
@@ -193,6 +196,7 @@ for (var i in deploy_spec) {
     for (var subnet_index in deploy_spec[i].subnet) {
         const subnet = new aws.ec2.Subnet(deploy_spec[i].subnet[subnet_index].tags.Name, {
             vpcId: vpc.id,
+            availabilityZone: deploy_spec[i].subnet[subnet_index].availabilityZone,
             cidrBlock: deploy_spec[i].subnet[subnet_index].cidrBlock,
             tags: deploy_spec[i].subnet[subnet_index].tags
         }, { dependsOn: [vpc] });
