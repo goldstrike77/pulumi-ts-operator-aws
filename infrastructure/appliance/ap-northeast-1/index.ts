@@ -5,7 +5,12 @@ const deploy_spec = [
     {
         routetable: {
             vpc: "vpc-ap-northeast-1-01",
-            subnet: ["subnet-ap-northeast-1-02", "subnet-ap-northeast-1-03"],
+            subnet: [
+                "subnet-directory-ap-northeast-1-01",
+                "subnet-directory-ap-northeast-1-02",
+                "subnet-clientvpn-ap-northeast-1-01",
+                "subnet-natgateway-ap-northeast-1-01"
+            ],
             tags: {
                 Name: "rtb-ap-northeast-1-01",
                 Project: pulumi.getProject(),
@@ -13,7 +18,7 @@ const deploy_spec = [
             }
         },
         natgateway: {
-            subnet: "subnet-ap-northeast-1-01",
+            subnet: "subnet-natgateway-ap-northeast-1-01",
             tags: {
                 Name: "natgateway-ap-northeast-1-01",
                 Project: pulumi.getProject(),
@@ -31,7 +36,7 @@ const deploy_spec = [
                 egress: [{ fromPort: 0, toPort: 0, protocol: "-1", cidrBlocks: ["0.0.0.0/0"] }],
             },
             vpc: "vpc-ap-northeast-1-01",
-            subnet: "subnet-ap-northeast-1-01",
+            subnet: "subnet-clientvpn-ap-northeast-1-01",
             cloudwatch: {
                 retentionInDays: 3,
             },

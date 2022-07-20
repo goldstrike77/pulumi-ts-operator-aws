@@ -6,8 +6,8 @@ const deploy_spec = [
         directory: {
             vpc: "vpc-ap-northeast-1-01",
             subnet: [
-                "subnet-ap-northeast-1-01",
-                "subnet-ap-northeast-1-02"
+                "subnet-directory-ap-northeast-1-01",
+                "subnet-directory-ap-northeast-1-02"
             ],
             type: "SimpleAD",
             name: "corp.example.com",

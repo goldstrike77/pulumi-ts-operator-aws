@@ -49,33 +49,72 @@ const deploy_spec = [
         subnet: [
             {
                 cidrBlock: "172.32.0.0/28",
+                mapPublicIpOnLaunch: false,
                 availabilityZone: "ap-northeast-1a",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
-                    Name: "subnet-ap-northeast-1-01",
+                    Name: "subnet-directory-ap-northeast-1-01",
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 },
             },
             {
                 cidrBlock: "172.32.0.16/28",
+                mapPublicIpOnLaunch: false,
                 availabilityZone: "ap-northeast-1c",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
-                    Name: "subnet-ap-northeast-1-02",
+                    Name: "subnet-directory-ap-northeast-1-02",
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 }
             },
             {
-                cidrBlock: "172.32.1.0/24",
+                cidrBlock: "172.32.0.32/28",
+                mapPublicIpOnLaunch: false,
                 availabilityZone: "ap-northeast-1a",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
-                    Name: "subnet-ap-northeast-1-03",
+                    Name: "subnet-clientvpn-ap-northeast-1-01",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            },
+            {
+                cidrBlock: "172.32.0.48/28",
+                mapPublicIpOnLaunch: false,
+                availabilityZone: "ap-northeast-1a",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-natgateway-ap-northeast-1-01",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            },
+            {
+                cidrBlock: "172.32.0.64/28",
+                mapPublicIpOnLaunch: true,
+                availabilityZone: "ap-northeast-1a",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-bastion-ap-northeast-1-01",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            },
+            {
+                cidrBlock: "172.32.0.80/28",
+                mapPublicIpOnLaunch: true,
+                availabilityZone: "ap-northeast-1c",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-bastion-ap-northeast-1-02",
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 }
@@ -192,10 +231,11 @@ for (var i in deploy_spec) {
         egress: deploy_spec[i].defaultsecuritygroup.egress,
         tags: deploy_spec[i].defaultsecuritygroup.tags
     }, { dependsOn: [vpc] });
-    // Create Amazon Subnet & Network Acl.
+    // Create Amazon Subnet, Network Acl & Public route table.
     for (var subnet_index in deploy_spec[i].subnet) {
         const subnet = new aws.ec2.Subnet(deploy_spec[i].subnet[subnet_index].tags.Name, {
             vpcId: vpc.id,
+            mapPublicIpOnLaunch: deploy_spec[i].subnet[subnet_index].mapPublicIpOnLaunch,
             availabilityZone: deploy_spec[i].subnet[subnet_index].availabilityZone,
             cidrBlock: deploy_spec[i].subnet[subnet_index].cidrBlock,
             tags: deploy_spec[i].subnet[subnet_index].tags
@@ -212,5 +252,16 @@ for (var i in deploy_spec) {
             networkAclId: acl.id,
             subnetId: subnet.id,
         }, { dependsOn: [acl] });
+        if (deploy_spec[i].subnet[subnet_index].mapPublicIpOnLaunch) {
+            const routetable = new aws.ec2.RouteTable(deploy_spec[i].subnet[subnet_index].tags.Name, {
+                vpcId: vpc.id,
+                routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: internetgateway.id, }],
+                tags: { ...deploy_spec[i].subnet[subnet_index].tags, ...{ Name: `rt-${deploy_spec[i].subnet[subnet_index].tags.Name}` } }
+            }, { dependsOn: [aclassociation] });
+            const routeTableAssociation = new aws.ec2.RouteTableAssociation(deploy_spec[i].subnet[subnet_index].tags.Name, {
+                subnetId: subnet.id,
+                routeTableId: routetable.id
+            }, { dependsOn: [routetable] });
+        }
     };
 }
