@@ -50,8 +50,7 @@ const deploy_spec = [
 ]
 
 for (var i in deploy_spec) {
-    /**
-        // Create Amazon Virtual Private Cloud NAT Gateway.
+    // Create Amazon Virtual Private Cloud NAT Gateway.
     const natgatewayeip = new aws.ec2.Eip(deploy_spec[i].natgateway.tags.Name, {
         vpc: true,
         tags: {
@@ -76,48 +75,49 @@ for (var i in deploy_spec) {
             subnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].routetable.subnet[subnet_index]] }] })).id,
             routeTableId: routetable.id
         }, { dependsOn: [routetable] });
-    };
-     */
-    // Create Amazon Client VPN.
-    const loggroup = new aws.cloudwatch.LogGroup(deploy_spec[i].clientvpn.tags.Name, {
-        retentionInDays: deploy_spec[i].clientvpn.cloudwatch.retentionInDays,
-        tags: deploy_spec[i].clientvpn.tags
-    });
-    const logstream = new aws.cloudwatch.LogStream(deploy_spec[i].clientvpn.tags.Name, {
-        logGroupName: loggroup.name
-    }, { dependsOn: [loggroup] });
-    const securitygroup = new aws.ec2.SecurityGroup(deploy_spec[i].clientvpn.tags.Name, {
-        vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.vpc] }] })).id,
-        ingress: deploy_spec[i].clientvpn.securitygroup.ingress,
-        egress: deploy_spec[i].clientvpn.securitygroup.egress,
-        tags: { ...deploy_spec[i].clientvpn.tags, ...{ Name: `sg-${deploy_spec[i].clientvpn.tags.Name}` } }
-    }, { dependsOn: [logstream] });
-    const endpoint = new aws.ec2clientvpn.Endpoint(deploy_spec[i].clientvpn.tags.Name, {
-        serverCertificateArn: pulumi.output(aws.acm.getCertificate({ domain: deploy_spec[i].clientvpn.domain })).arn,
-        clientCidrBlock: deploy_spec[i].clientvpn.clientCidrBlock,
-        securityGroupIds: [securitygroup.id],
-        sessionTimeoutHours: deploy_spec[i].clientvpn.sessionTimeoutHours,
-        vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.vpc] }] })).id,
-        transportProtocol: deploy_spec[i].clientvpn.transportProtocol,
-        vpnPort: deploy_spec[i].clientvpn.vpnPort,
-        authenticationOptions: [{
-            type: "certificate-authentication",
-            rootCertificateChainArn: pulumi.output(aws.acm.getCertificate({ domain: deploy_spec[i].clientvpn.domain })).arn,
-        }],
-        connectionLogOptions: {
-            enabled: true,
-            cloudwatchLogGroup: loggroup.name,
-            cloudwatchLogStream: logstream.name,
-        },
-        tags: deploy_spec[i].clientvpn.tags
-    }, { dependsOn: [securitygroup] });
-    const networkassociation = new aws.ec2clientvpn.NetworkAssociation(deploy_spec[i].clientvpn.tags.Name, {
-        clientVpnEndpointId: endpoint.id,
-        subnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.subnet] }] })).id,
-    }, { dependsOn: [endpoint] });
-    const route = new aws.ec2clientvpn.Route(deploy_spec[i].clientvpn.tags.Name, {
-        clientVpnEndpointId: endpoint.id,
-        destinationCidrBlock: "0.0.0.0/0",
-        targetVpcSubnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.subnet] }] })).id,
-    }, { dependsOn: [networkassociation] });
+    }
+    /**
+        // Create Amazon Client VPN.
+        const loggroup = new aws.cloudwatch.LogGroup(deploy_spec[i].clientvpn.tags.Name, {
+            retentionInDays: deploy_spec[i].clientvpn.cloudwatch.retentionInDays,
+            tags: deploy_spec[i].clientvpn.tags
+        });
+        const logstream = new aws.cloudwatch.LogStream(deploy_spec[i].clientvpn.tags.Name, {
+            logGroupName: loggroup.name
+        }, { dependsOn: [loggroup] });
+        const securitygroup = new aws.ec2.SecurityGroup(deploy_spec[i].clientvpn.tags.Name, {
+            vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.vpc] }] })).id,
+            ingress: deploy_spec[i].clientvpn.securitygroup.ingress,
+            egress: deploy_spec[i].clientvpn.securitygroup.egress,
+            tags: { ...deploy_spec[i].clientvpn.tags, ...{ Name: `sg-${deploy_spec[i].clientvpn.tags.Name}` } }
+        }, { dependsOn: [logstream] });
+        const endpoint = new aws.ec2clientvpn.Endpoint(deploy_spec[i].clientvpn.tags.Name, {
+            serverCertificateArn: pulumi.output(aws.acm.getCertificate({ domain: deploy_spec[i].clientvpn.domain })).arn,
+            clientCidrBlock: deploy_spec[i].clientvpn.clientCidrBlock,
+            securityGroupIds: [securitygroup.id],
+            sessionTimeoutHours: deploy_spec[i].clientvpn.sessionTimeoutHours,
+            vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.vpc] }] })).id,
+            transportProtocol: deploy_spec[i].clientvpn.transportProtocol,
+            vpnPort: deploy_spec[i].clientvpn.vpnPort,
+            authenticationOptions: [{
+                type: "certificate-authentication",
+                rootCertificateChainArn: pulumi.output(aws.acm.getCertificate({ domain: deploy_spec[i].clientvpn.domain })).arn,
+            }],
+            connectionLogOptions: {
+                enabled: true,
+                cloudwatchLogGroup: loggroup.name,
+                cloudwatchLogStream: logstream.name,
+            },
+            tags: deploy_spec[i].clientvpn.tags
+        }, { dependsOn: [securitygroup] });
+        const networkassociation = new aws.ec2clientvpn.NetworkAssociation(deploy_spec[i].clientvpn.tags.Name, {
+            clientVpnEndpointId: endpoint.id,
+            subnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.subnet] }] })).id,
+        }, { dependsOn: [endpoint] });
+        const route = new aws.ec2clientvpn.Route(deploy_spec[i].clientvpn.tags.Name, {
+            clientVpnEndpointId: endpoint.id,
+            destinationCidrBlock: "0.0.0.0/0",
+            targetVpcSubnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].clientvpn.subnet] }] })).id,
+        }, { dependsOn: [networkassociation] });
+    */
 }

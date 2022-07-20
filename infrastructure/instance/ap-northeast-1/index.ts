@@ -18,45 +18,15 @@ const deploy_spec = [
             ],
             public: false,
             vpc: "vpc-ap-northeast-1-01",
-            subnet: "subnet-ap-northeast-1-03",
+            subnet: "subnet-test-ap-northeast-1-01",
             keyName: "pulumi-ts-operator-aws",
             securitygroup: {
                 ingress: [
-                    { cidrBlocks: ["172.32.1.0/24"], protocol: "tcp", fromPort: 22, toPort: 22 },
+                    { cidrBlocks: ["172.32.0.64/28", "172.32.0.80/28"], protocol: "tcp", fromPort: 22, toPort: 22 },
+                    { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
+                    { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
                 ],
                 egress: []
-            },
-            tags: {
-                Project: pulumi.getProject(),
-                Stack: pulumi.getStack(),
-            }
-        }
-    },
-    {
-        instance: {
-            group: "bastion",
-            name: [
-                "demo-bst-01",
-            ],
-            ami: "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*",
-            virtualizationType: "hvm",
-            instanceType: "t2.micro",
-            rootBlockDevice: { volumeSize: 8, volumeType: "gp2" },
-            ebsBlockDevices: [
-                { deviceName: "/dev/xvdb", volumeSize: 20, volumeType: "gp2" },
-                { deviceName: "/dev/xvdc", volumeSize: 20, volumeType: "gp2" }
-            ],
-            public: true,
-            vpc: "vpc-ap-northeast-1-01",
-            subnet: "subnet-ap-northeast-1-02",
-            keyName: "pulumi-ts-operator-aws",
-            securitygroup: {
-                ingress: [
-                    { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 22, toPort: 22 },
-                ],
-                egress: [
-                    { cidrBlocks: ["172.32.0.0/16"], protocol: "tcp", fromPort: 22, toPort: 22 },
-                ]
             },
             tags: {
                 Project: pulumi.getProject(),

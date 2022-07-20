@@ -118,6 +118,18 @@ const deploy_spec = [
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 }
+            },
+            {
+                cidrBlock: "172.32.1.0/24",
+                mapPublicIpOnLaunch: true,
+                availabilityZone: "ap-northeast-1a",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-test-ap-northeast-1-01",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
             }
         ]
     },
@@ -256,7 +268,7 @@ for (var i in deploy_spec) {
             const routetable = new aws.ec2.RouteTable(deploy_spec[i].subnet[subnet_index].tags.Name, {
                 vpcId: vpc.id,
                 routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: internetgateway.id, }],
-                tags: { ...deploy_spec[i].subnet[subnet_index].tags, ...{ Name: `rt-${deploy_spec[i].subnet[subnet_index].tags.Name}` } }
+                tags: { ...deploy_spec[i].subnet[subnet_index].tags, ...{ Name: `rtb-${deploy_spec[i].subnet[subnet_index].tags.Name}` } }
             }, { dependsOn: [aclassociation] });
             const routeTableAssociation = new aws.ec2.RouteTableAssociation(deploy_spec[i].subnet[subnet_index].tags.Name, {
                 subnetId: subnet.id,
