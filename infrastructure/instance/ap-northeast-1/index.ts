@@ -6,8 +6,8 @@ const deploy_spec = [
         instance: {
             group: "web",
             name: [
-                "demo-web-01",
-                "demo-web-02"
+                "i-demo-web-01",
+                "i-demo-web-02"
             ],
             ami: "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*",
             virtualizationType: "hvm",
@@ -18,7 +18,7 @@ const deploy_spec = [
             ],
             public: false,
             vpc: "vpc-ap-northeast-1-01",
-            subnet: "subnet-test-ap-northeast-1-01",
+            subnet: "subnet-instance-ap-northeast-1-01",
             keyName: "pulumi-ts-operator-aws",
             securitygroup: {
                 ingress: [
@@ -37,14 +37,14 @@ const deploy_spec = [
 ]
 
 for (var i in deploy_spec) {
-    // Create Amazon Virtual Private Cloud default security group.
+    // Create Security group.
     const securitygroup = new aws.ec2.SecurityGroup(deploy_spec[i].instance.group, {
         vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].instance.vpc] }] })).id,
         ingress: deploy_spec[i].instance.securitygroup.ingress,
         egress: deploy_spec[i].instance.securitygroup.egress,
         tags: { ...deploy_spec[i].instance.tags, ...{ Name: `sg-${deploy_spec[i].instance.group}` } }
     });
-    // Create Amazon EC2 instance.
+    // Create EC2 instance.
     for (var instance_index in deploy_spec[i].instance.name) {
         const instance = new aws.ec2.Instance(deploy_spec[i].instance.name[instance_index], {
             ami: pulumi.output(aws.ec2.getAmi({ mostRecent: true, filters: [{ name: "name", values: [deploy_spec[i].instance.ami], }, { name: "virtualization-type", values: [deploy_spec[i].instance.virtualizationType], },], })).id,
@@ -55,10 +55,12 @@ for (var i in deploy_spec) {
             subnetId: pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].instance.subnet], }], })).id,
             tags: { ...deploy_spec[i].instance.tags, ...{ Name: deploy_spec[i].instance.name[instance_index] } },
         }, { dependsOn: [securitygroup,] });
+        // Attaches a security group to an Elastic Network Interface.
         const sgattachment = new aws.ec2.NetworkInterfaceSecurityGroupAttachment(deploy_spec[i].instance.name[instance_index], {
             securityGroupId: securitygroup.id,
             networkInterfaceId: instance.primaryNetworkInterfaceId,
         }, { dependsOn: [instance] });
+        // Create Elastic IP if Public exposure.
         if (deploy_spec[i].instance.public) {
             const instanceeip = new aws.ec2.Eip(deploy_spec[i].instance.name[instance_index], {
                 instance: instance.id,

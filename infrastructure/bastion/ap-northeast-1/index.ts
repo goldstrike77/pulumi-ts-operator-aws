@@ -20,9 +20,11 @@ const deploy_spec = [
             defaultCooldown: 900,
             securitygroup: {
                 ingress: [
-                    { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 22, toPort: 22 },
+                    { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 8, toPort: 0 },
+                    { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 22, toPort: 22 }
                 ],
                 egress: [
+                    { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 8, toPort: 0 },
                     { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 22, toPort: 22 },
                     { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
                     { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
@@ -31,7 +33,7 @@ const deploy_spec = [
                 ]
             },
             tags: {
-                Name: "demo-bastion",
+                Name: "i-demo-bastion",
                 Project: pulumi.getProject(),
                 Stack: pulumi.getStack(),
             }
@@ -40,14 +42,14 @@ const deploy_spec = [
 ]
 
 for (var i in deploy_spec) {
-    // Create Amazon Virtual Private Cloud default security group.
+    // Create Virtual Private Cloud default security group.
     const securitygroup = new aws.ec2.SecurityGroup(deploy_spec[i].bastion.tags.Name, {
         vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].bastion.vpc] }] })).id,
         ingress: deploy_spec[i].bastion.securitygroup.ingress,
         egress: deploy_spec[i].bastion.securitygroup.egress,
         tags: { ...deploy_spec[i].bastion.tags, ...{ Name: `sg-${deploy_spec[i].bastion.tags.Name}` } }
     });
-    // Create Amazon IAM role.
+    // Create IAM role.
     const role = new aws.iam.Role(deploy_spec[i].bastion.tags.Name, {
         name: `Linux-bastion-${deploy_spec[i].bastion.tags.Name}`,
         assumeRolePolicy: `{
@@ -63,7 +65,7 @@ for (var i in deploy_spec) {
             ]
           }`
     }, { dependsOn: [securitygroup,] });
-    // Create Amazon IAM role inline policy.
+    // Create IAM role inline policy.
     const rolepolicy = new aws.iam.RolePolicy(deploy_spec[i].bastion.tags.Name, {
         role: role.id,
         policy: `{
@@ -100,12 +102,12 @@ for (var i in deploy_spec) {
             ]
           }`
     }, { dependsOn: [role] });
-    // Create Amazon IAM instance profile.
+    // Create IAM instance profile.
     const instanceprofile = new aws.iam.InstanceProfile(deploy_spec[i].bastion.tags.Name, {
         role: role.name,
         tags: deploy_spec[i].bastion.tags
     }, { dependsOn: [rolepolicy,] });
-    // Create Amazon launch configuration for autoscaling groups.
+    // Create launch configuration for autoscaling groups.
     const launchconfiguration = new aws.ec2.LaunchConfiguration(deploy_spec[i].bastion.tags.Name, {
         imageId: pulumi.output(aws.ec2.getAmi({ mostRecent: true, filters: [{ name: "name", values: [deploy_spec[i].bastion.ami], }, { name: "virtualization-type", values: [deploy_spec[i].bastion.virtualizationType], },], })).id,
         instanceType: deploy_spec[i].bastion.instanceType,
@@ -116,7 +118,7 @@ for (var i in deploy_spec) {
         iamInstanceProfile: instanceprofile.name,
         securityGroups: [securitygroup.id]
     }, { dependsOn: [instanceprofile,] });
-    // Create Amazon AutoScaling Groups.
+    // Create AutoScaling Groups.
     const autoscaling = new aws.autoscaling.Group(deploy_spec[i].bastion.tags.Name, {
         vpcZoneIdentifiers: [
             pulumi.output(aws.ec2.getSubnet({ filters: [{ name: "tag:Name", values: [deploy_spec[i].bastion.subnet[0]] }] })).id,

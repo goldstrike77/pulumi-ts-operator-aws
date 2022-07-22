@@ -31,11 +31,11 @@ const deploy_spec = [
         defaultsecuritygroup: {
             ingress: [
                 { protocol: "-1", fromPort: 0, toPort: 0, self: true },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 }
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 8, toPort: 0 }
             ],
             egress: [
                 { protocol: "-1", fromPort: 0, toPort: 0, self: true },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 8, toPort: 0 },
                 { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
                 { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
                 { cidrBlocks: ["0.0.0.0/0"], protocol: "udp", fromPort: 123, toPort: 123 }
@@ -85,7 +85,7 @@ const deploy_spec = [
             },
             {
                 cidrBlock: "172.32.0.48/28",
-                mapPublicIpOnLaunch: false,
+                mapPublicIpOnLaunch: true,
                 availabilityZone: "ap-northeast-1a",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
@@ -121,12 +121,24 @@ const deploy_spec = [
             },
             {
                 cidrBlock: "172.32.1.0/24",
-                mapPublicIpOnLaunch: true,
+                mapPublicIpOnLaunch: false,
                 availabilityZone: "ap-northeast-1a",
                 egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
-                    Name: "subnet-test-ap-northeast-1-01",
+                    Name: "subnet-instance-ap-northeast-1-01",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            },
+            {
+                cidrBlock: "172.32.2.0/24",
+                mapPublicIpOnLaunch: false,
+                availabilityZone: "ap-northeast-1a",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-rds-ap-northeast-1-01",
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 }
@@ -215,13 +227,13 @@ const deploy_spec = [
 ]
 
 for (var i in deploy_spec) {
-    // Create Amazon Virtual Private Cloud.
+    // Create Virtual Private Cloud.
     const vpc = new aws.ec2.Vpc(deploy_spec[i].vpc.tags.Name, {
         cidrBlock: deploy_spec[i].vpc.cidrBlock,
         enableDnsHostnames: deploy_spec[i].vpc.enableDnsHostnames,
         tags: deploy_spec[i].vpc.tags
     });
-    // Create Amazon Virtual Private Cloud Default DHCP Options.
+    // Create Virtual Private Cloud Default DHCP Options.
     const vpcdhcpoptions = new aws.ec2.VpcDhcpOptions(deploy_spec[i].vpcdhcpoptions.tags.Name, {
         domainName: deploy_spec[i].vpcdhcpoptions.domainName,
         domainNameServers: deploy_spec[i].vpcdhcpoptions.domainNameServers,
@@ -231,7 +243,7 @@ for (var i in deploy_spec) {
         vpcId: vpc.id,
         dhcpOptionsId: vpcdhcpoptions.id,
     });
-    // Create Amazon Virtual Private Cloud Internet Gateway.
+    // Create Virtual Private Cloud Internet Gateway.
     const internetgateway = new aws.ec2.InternetGateway(deploy_spec[i].internetgateway.tags.Name, {
         vpcId: vpc.id,
         tags: deploy_spec[i].internetgateway.tags
@@ -243,7 +255,7 @@ for (var i in deploy_spec) {
         egress: deploy_spec[i].defaultsecuritygroup.egress,
         tags: deploy_spec[i].defaultsecuritygroup.tags
     }, { dependsOn: [vpc] });
-    // Create Amazon Subnet, Network Acl & Public route table.
+    // Create Subnet, Network Acl.
     for (var subnet_index in deploy_spec[i].subnet) {
         const subnet = new aws.ec2.Subnet(deploy_spec[i].subnet[subnet_index].tags.Name, {
             vpcId: vpc.id,
@@ -264,6 +276,7 @@ for (var i in deploy_spec) {
             networkAclId: acl.id,
             subnetId: subnet.id,
         }, { dependsOn: [acl] });
+        // Create Subnet Public route table.
         if (deploy_spec[i].subnet[subnet_index].mapPublicIpOnLaunch) {
             const routetable = new aws.ec2.RouteTable(deploy_spec[i].subnet[subnet_index].tags.Name, {
                 vpcId: vpc.id,

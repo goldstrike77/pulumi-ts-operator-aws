@@ -18,7 +18,7 @@ const deploy_spec = [
     }
 ]
 
-// Create Amazon IAM role.
+// Create IAM role.
 const role = new aws.iam.Role("vpc-flow-logs-role", {
     assumeRolePolicy: `{
             "Version": "2012-10-17",
@@ -34,7 +34,7 @@ const role = new aws.iam.Role("vpc-flow-logs-role", {
           }`
 });
 
-// Create Amazon IAM role inline policy.
+// Create IAM role inline policy.
 const rolepolicy = new aws.iam.RolePolicy("vpc-flow-logs-rolepolicy", {
     role: role.id,
     policy: `{
@@ -55,12 +55,12 @@ const rolepolicy = new aws.iam.RolePolicy("vpc-flow-logs-rolepolicy", {
 }, { dependsOn: [role] });
 
 for (var i in deploy_spec) {
-    // Create Amazon CloudWatch Log Group resource.
+    // Create CloudWatch Log Group resource.
     const loggroup = new aws.cloudwatch.LogGroup(deploy_spec[i].flowlog.tags.Name, {
         retentionInDays: deploy_spec[i].flowlog.retentionInDays,
         tags: deploy_spec[i].flowlog.tags
     }, { dependsOn: [rolepolicy] });
-    // Create Amazon Virtual Private Cloud Flow Log.
+    // Create Virtual Private Cloud Flow Log.
     for (var vpc_index in deploy_spec[i].flowlog.vpc) {
         const flowlog = new aws.ec2.FlowLog(deploy_spec[i].flowlog.vpc[vpc_index].name, {
             iamRoleArn: role.arn,

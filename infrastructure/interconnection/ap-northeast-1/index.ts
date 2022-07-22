@@ -14,7 +14,7 @@ const deploy_spec = [
 ]
 
 for (var i in deploy_spec) {
-    // Create Amazon Virtual Private Cloud Peering Connection.
+    // Create Virtual Private Cloud Peering Connection.
     const vpcpeeringconnection = new aws.ec2.VpcPeeringConnection(`${deploy_spec[i].vpcpeeringconnection.peervpc}-${deploy_spec[i].vpcpeeringconnection.vpc}`, {
         peerVpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].vpcpeeringconnection.peervpc], }], })).id,
         vpcId: pulumi.output(aws.ec2.getVpc({ filters: [{ name: "tag:Name", values: [deploy_spec[i].vpcpeeringconnection.vpc], }], })).id,
