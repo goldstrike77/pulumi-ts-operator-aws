@@ -12,7 +12,7 @@ const deploy_spec = [
                 Stack: pulumi.getStack(),
             }
         },
-        vpcdhcpoptions: {
+        dhcpoptions: {
             domainName: "ap-northeast-1.compute.internal",
             domainNameServers: ["AmazonProvidedDNS"],
             tags: {
@@ -156,7 +156,7 @@ const deploy_spec = [
                   Stack: pulumi.getStack(),
               }
           },
-          vpcdhcpoptions: {
+          dhcpoptions: {
               domainName: "ap-northeast-1.compute.internal",
               domainNameServers: ["AmazonProvidedDNS"],
               tags: {
@@ -234,14 +234,14 @@ for (var i in deploy_spec) {
         tags: deploy_spec[i].vpc.tags
     });
     // Create Virtual Private Cloud Default DHCP Options.
-    const vpcdhcpoptions = new aws.ec2.VpcDhcpOptions(deploy_spec[i].vpcdhcpoptions.tags.Name, {
-        domainName: deploy_spec[i].vpcdhcpoptions.domainName,
-        domainNameServers: deploy_spec[i].vpcdhcpoptions.domainNameServers,
-        tags: deploy_spec[i].vpcdhcpoptions.tags
+    const dhcpoptions = new aws.ec2.VpcDhcpOptions(deploy_spec[i].dhcpoptions.tags.Name, {
+        domainName: deploy_spec[i].dhcpoptions.domainName,
+        domainNameServers: deploy_spec[i].dhcpoptions.domainNameServers,
+        tags: deploy_spec[i].dhcpoptions.tags
     });
-    const vpcdhcpoptionsassociation = new aws.ec2.VpcDhcpOptionsAssociation(deploy_spec[i].vpcdhcpoptions.tags.Name, {
+    const dhcpoptionsassociation = new aws.ec2.VpcDhcpOptionsAssociation(deploy_spec[i].dhcpoptions.tags.Name, {
         vpcId: vpc.id,
-        dhcpOptionsId: vpcdhcpoptions.id,
+        dhcpOptionsId: dhcpoptions.id,
     });
     // Create Virtual Private Cloud Internet Gateway.
     const internetgateway = new aws.ec2.InternetGateway(deploy_spec[i].internetgateway.tags.Name, {
@@ -268,9 +268,7 @@ for (var i in deploy_spec) {
             vpcId: vpc.id,
             egress: deploy_spec[i].subnet[subnet_index].egress,
             ingress: deploy_spec[i].subnet[subnet_index].ingress,
-            tags: {
-                Name: `acl-${deploy_spec[i].subnet[subnet_index].tags.Name}`,
-            }
+            tags: { ...deploy_spec[i].subnet[subnet_index].tags, ...{ Name: `acl-${deploy_spec[i].subnet[subnet_index].tags.Name}` } }
         }, { dependsOn: [subnet] });
         const aclassociation = new aws.ec2.NetworkAclAssociation(`acl-${deploy_spec[i].subnet[subnet_index].tags.Name}`, {
             networkAclId: acl.id,
@@ -288,5 +286,5 @@ for (var i in deploy_spec) {
                 routeTableId: routetable.id
             }, { dependsOn: [routetable] });
         }
-    };
+    }
 }

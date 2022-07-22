@@ -130,8 +130,6 @@ for (var i in deploy_spec) {
         maxSize: deploy_spec[i].bastion.maxSize,
         healthCheckType: deploy_spec[i].bastion.healthCheckType,
         healthCheckGracePeriod: deploy_spec[i].bastion.healthCheckGracePeriod,
-        tags: [
-            { key: "Name", value: deploy_spec[i].bastion.tags.Name, propagateAtLaunch: true }
-        ]
+        tags: [{ key: "Name", value: deploy_spec[i].bastion.tags.Name, propagateAtLaunch: true }]
     }, { dependsOn: [launchconfiguration] });
 }
