@@ -5,7 +5,9 @@ const deploy_spec = [
     {
         vpc: {
             cidrBlock: "172.32.0.0/16",
+            cidrBlockAssociation: ["172.33.0.0/16"],
             enableDnsHostnames: true,
+            enableDnsSupport: true,
             tags: {
                 Name: "vpc-ap-northeast-1-01",
                 Project: pulumi.getProject(),
@@ -144,86 +146,7 @@ const deploy_spec = [
                 }
             }
         ]
-    },
-    /**
-      {
-          vpc: {
-              cidrBlock: "172.33.0.0/16",
-              enableDnsHostnames: true,
-              tags: {
-                  Name: "vpc-ap-northeast-1-02",
-                  Project: pulumi.getProject(),
-                  Stack: pulumi.getStack(),
-              }
-          },
-          dhcpoptions: {
-              domainName: "ap-northeast-1.compute.internal",
-              domainNameServers: ["AmazonProvidedDNS"],
-              tags: {
-                  Name: "dopt-ap-northeast-1-02",
-                  Project: pulumi.getProject(),
-                  Stack: pulumi.getStack(),
-              }
-          },
-          internetgateway: {
-              tags: {
-                  Name: "igw-ap-northeast-1-02",
-                  Project: pulumi.getProject(),
-                  Stack: pulumi.getStack(),
-              }
-          },
-          defaultsecuritygroup: {
-            ingress: [
-                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 }
-            ],
-            egress: [
-                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 0, toPort: 0 },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
-                { cidrBlocks: ["0.0.0.0/0"], protocol: "udp", fromPort: 123, toPort: 123 }
-            ],
-              tags: {
-                  Name: "sg-ap-northeast-1-02",
-                  Project: pulumi.getProject(),
-                  Stack: pulumi.getStack(),
-              }
-          },
-          subnet: [
-              {
-                  cidrBlock: "172.33.0.0/24",
-                  egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
-                  ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
-                  tags: {
-                      Name: "subnet-ap-northeast-1-04",
-                      Project: pulumi.getProject(),
-                      Stack: pulumi.getStack(),
-                  }
-              },
-              {
-                  cidrBlock: "172.33.1.0/24",
-                  egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
-                  ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
-                  tags: {
-                      Name: "subnet-ap-northeast-1-05",
-                      Project: pulumi.getProject(),
-                      Stack: pulumi.getStack(),
-                  }
-              },
-              {
-                  cidrBlock: "172.33.2.0/24",
-                  egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
-                  ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
-                  tags: {
-                      Name: "subnet-ap-northeast-1-06",
-                      Project: pulumi.getProject(),
-                      Stack: pulumi.getStack(),
-                  }
-              }
-          ]
-      }
-     */
+    }
 ]
 
 for (var i in deploy_spec) {
@@ -231,8 +154,16 @@ for (var i in deploy_spec) {
     const vpc = new aws.ec2.Vpc(deploy_spec[i].vpc.tags.Name, {
         cidrBlock: deploy_spec[i].vpc.cidrBlock,
         enableDnsHostnames: deploy_spec[i].vpc.enableDnsHostnames,
+        enableDnsSupport: deploy_spec[i].vpc.enableDnsSupport,
         tags: deploy_spec[i].vpc.tags
     });
+    // Associate additional IPv4 CIDR blocks with a VPC.
+    for (var cidrblockassociation_index in deploy_spec[i].vpc.cidrBlockAssociation) {
+        const vpcipv4cidrblockassociation = new aws.ec2.VpcIpv4CidrBlockAssociation(deploy_spec[i].vpc.cidrBlockAssociation[cidrblockassociation_index], {
+            vpcId: vpc.id,
+            cidrBlock: deploy_spec[i].vpc.cidrBlockAssociation[cidrblockassociation_index],
+        }, { dependsOn: [vpc] });
+    }
     // Create Virtual Private Cloud Default DHCP Options.
     const dhcpoptions = new aws.ec2.VpcDhcpOptions(deploy_spec[i].dhcpoptions.tags.Name, {
         domainName: deploy_spec[i].dhcpoptions.domainName,
@@ -242,7 +173,7 @@ for (var i in deploy_spec) {
     const dhcpoptionsassociation = new aws.ec2.VpcDhcpOptionsAssociation(deploy_spec[i].dhcpoptions.tags.Name, {
         vpcId: vpc.id,
         dhcpOptionsId: dhcpoptions.id,
-    });
+    }, { dependsOn: [vpc] });
     // Create Virtual Private Cloud Internet Gateway.
     const internetgateway = new aws.ec2.InternetGateway(deploy_spec[i].internetgateway.tags.Name, {
         vpcId: vpc.id,
