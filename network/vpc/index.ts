@@ -15,7 +15,7 @@ const deploy_spec = [
             }
         },
         dhcpoptions: {
-            domainName: "ap-northeast-1.compute.internal",
+            domainName: "ap-northeast-1-01.compute.internal",
             domainNameServers: ["AmazonProvidedDNS"],
             tags: {
                 Name: "dopt-ap-northeast-1-01",
@@ -141,6 +141,79 @@ const deploy_spec = [
                 ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
                 tags: {
                     Name: "subnet-rds-ap-northeast-1-01",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            }
+        ]
+    },
+    {
+        vpc: {
+            cidrBlock: "172.34.0.0/16",
+            cidrBlockAssociation: ["172.35.0.0/16"],
+            enableDnsHostnames: true,
+            enableDnsSupport: true,
+            tags: {
+                Name: "vpc-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        dhcpoptions: {
+            domainName: "ap-northeast-1-02.compute.internal",
+            domainNameServers: ["AmazonProvidedDNS"],
+            tags: {
+                Name: "dopt-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        internetgateway: {
+            tags: {
+                Name: "igw-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        defaultsecuritygroup: {
+            ingress: [
+                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 8, toPort: 0 }
+            ],
+            egress: [
+                { protocol: "-1", fromPort: 0, toPort: 0, self: true },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "icmp", fromPort: 8, toPort: 0 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 80, toPort: 80 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "tcp", fromPort: 443, toPort: 443 },
+                { cidrBlocks: ["0.0.0.0/0"], protocol: "udp", fromPort: 123, toPort: 123 }
+            ],
+            tags: {
+                Name: "sg-default-ap-northeast-1-02",
+                Project: pulumi.getProject(),
+                Stack: pulumi.getStack(),
+            }
+        },
+        subnet: [
+            {
+                cidrBlock: "172.34.1.0/24",
+                mapPublicIpOnLaunch: false,
+                availabilityZone: "ap-northeast-1a",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-instance-ap-northeast-1-02",
+                    Project: pulumi.getProject(),
+                    Stack: pulumi.getStack(),
+                }
+            },
+            {
+                cidrBlock: "172.34.2.0/24",
+                mapPublicIpOnLaunch: false,
+                availabilityZone: "ap-northeast-1a",
+                egress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                ingress: [{ protocol: "-1", ruleNo: 100, action: "allow", cidrBlock: "0.0.0.0/0", fromPort: 0, toPort: 0 }],
+                tags: {
+                    Name: "subnet-rds-ap-northeast-1-02",
                     Project: pulumi.getProject(),
                     Stack: pulumi.getStack(),
                 }
