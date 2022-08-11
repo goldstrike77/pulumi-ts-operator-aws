@@ -5,7 +5,7 @@
 Follow the steps in [Pulumi Installation and Setup](https://www.pulumi.com/docs/get-started/install/) and [Configuring Pulumi
 AWS](https://www.pulumi.com/registry/packages/aws/installation-configuration/) to get setup with Pulumi and AWS.
 
-Install dependencies:
+Install dependencies at the root level:
 
 ```
 $ npm install
